@@ -1,0 +1,15 @@
+{% extends 'social/base.html' %}
+{% block title %}Messages · Dymee{% endblock %}
+{% block content %}
+<section class="narrow-page">
+  <p class="eyebrow">JUST BETWEEN US</p><h1>Messages</h1><p class="muted">A good conversation can start anywhere.</p>
+  <div class="activity-list">
+    {% for person in partners %}
+      <a class="person-row" href="{% url 'conversation' person.username %}">
+        <span class="avatar">{% if person.profile.avatar %}<img src="{{ person.profile.avatar.url }}" alt="">{% else %}{{ person.username|slice:":1"|upper }}{% endif %}</span>
+        <span><b>{{ person.username }}</b><small>Open conversation</small></span><span class="row-arrow">↗</span>
+      </a>
+    {% empty %}<div class="empty-state"><span class="empty-icon">↗</span><h2>Your DMs are a blank canvas</h2><p>Find someone in Explore and start the conversation.</p><a class="button primary" href="{% url 'explore' %}">Explore people</a></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

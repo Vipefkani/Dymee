@@ -1,0 +1,846 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}Dymee{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'social/app.css' %}">
+  {% if BLOB_UPLOAD_ENABLED %}<script type="module" src="{% static 'js/blob-upload.js' %}"></script>{% endif %}
+</head>
+<body>
+  <div class="app-shell">
+    {% if request.user.is_authenticated %}
+    <header class="topbar">
+      <a class="brand" href="{% url 'feed' %}"><span class="brand-mark">◎</span> dymee</a>
+      <form class="top-search" action="{% url 'explore' %}" method="get">
+        <input aria-label="Search users and posts" type="search" name="q" placeholder="Search people, places, tags">
+      </form>
+      <a class="avatar small-avatar" href="{% url 'profile' request.user.username %}">
+        {% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}" alt="">
+        {% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}
+      </a>
+    </header>
+    <aside class="sidebar-nav" aria-label="Main navigation">
+      <a class="sidebar-section-label" href="{% url 'feed' %}">YOUR SPACE</a>
+      <nav class="sidebar-links">
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'feed' %}active{% endif %}" href="{% url 'feed' %}"><span class="sidebar-icon">⌂</span><span>Home feed</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'explore' %}active{% endif %}" href="{% url 'explore' %}"><span class="sidebar-icon">⌕</span><span>Explore</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'reels' %}active{% endif %}" href="{% url 'reels' %}"><span class="sidebar-icon">▷</span><span>Reels</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}" href="{% url 'create_post' %}"><span class="sidebar-icon">＋</span><span>Create post</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'create_story' %}active{% endif %}" href="{% url 'create_story' %}"><span class="sidebar-icon">◌</span><span>New story</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'inbox' or request.resolver_match.url_name == 'conversation' %}active{% endif %}" href="{% url 'inbox' %}"><span class="sidebar-icon">↗</span><span>Messages</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'activity' %}active{% endif %}" href="{% url 'activity' %}"><span class="sidebar-icon">♡</span><span>Activity</span><span class="notification-badge" data-notification-badge hidden></span></a>
+      </nav>
+      <a class="sidebar-section-label sidebar-account-label" href="{% url 'account_settings' %}">ACCOUNT</a>
+      <nav class="sidebar-links">
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' request.user.username %}"><span class="sidebar-icon">◉</span><span>My profile</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}" href="{% url 'edit_profile' %}"><span class="sidebar-icon">✎</span><span>Edit profile</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'account_settings' or request.resolver_match.url_name == 'password_change' %}active{% endif %}" href="{% url 'account_settings' %}"><span class="sidebar-icon">⚙</span><span>Settings</span></a>
+        <a class="sidebar-link {% if request.resolver_match.url_name == 'blocked_accounts' %}active{% endif %}" href="{% url 'blocked_accounts' %}"><span class="sidebar-icon">⊘</span><span>Blocked accounts</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="sidebar-user" href="{% url 'profile' request.user.username %}">
+          <span class="avatar">{% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}" alt="">{% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</span>
+          <span><b>{{ request.user.username }}</b><small>Your profile</small></span>
+        </a>
+        <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="sidebar-link sidebar-logout" type="submit"><span class="sidebar-icon">↪</span><span>Log out</span></button></form>
+      </div>
+    </aside>
+    {% endif %}
+    <main class="{% if request.user.is_authenticated %}page-content{% else %}auth-content{% endif %}">
+      {% if messages %}
+        <div class="flash-stack">
+          {% for message in messages %}<div class="flash {{ message.tags }}">{{ message }}</div>{% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    {% if request.user.is_authenticated %}
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <a href="{% url 'feed' %}" aria-label="Home"><span>⌂</span><b>Home</b></a>
+      <a href="{% url 'explore' %}" aria-label="Explore"><span>⌕</span><b>Explore</b></a>
+      <a href="{% url 'create_post' %}" aria-label="Create post"><span class="create-nav">＋</span><b>Create</b></a>
+      <a href="{% url 'activity' %}" aria-label="Activity"><span class="bottom-activity-icon">♡<i class="notification-badge" data-notification-badge hidden></i></span><b>Activity</b></a>
+      <a href="{% url 'profile' request.user.username %}" aria-label="Profile"><span>◉</span><b>Profile</b></a>
+    </nav>
+    {% endif %}
+  </div>
+  {% if request.user.is_authenticated %}
+  <div class="notification-toasts" data-notification-toasts aria-live="polite" aria-relevant="additions"></div>
+  <form hidden data-call-csrf>{% csrf_token %}</form>
+  <section class="call-overlay" data-call-overlay role="dialog" aria-modal="true" aria-labelledby="call-title" hidden>
+    <div class="call-dialog">
+      <p class="eyebrow">DY MEE CALL</p>
+      <h2 id="call-title" data-call-title>Call</h2>
+      <p class="call-status" data-call-status role="status">Connecting…</p>
+      <div class="call-media">
+        <video data-call-remote-video autoplay playsinline hidden></video>
+        <audio data-call-remote-audio autoplay></audio>
+        <video class="call-local-video" data-call-local-video autoplay playsinline muted hidden></video>
+      </div>
+      <div class="call-dialog-actions">
+        <button class="button primary" type="button" data-call-answer hidden>Answer</button>
+        <button class="button danger" type="button" data-call-decline hidden>Decline</button>
+        <button class="button danger" type="button" data-call-hangup hidden>End call</button>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+  <script>
+    window.bindLikeCards = (root = document) => root.querySelectorAll('[data-like-card]:not([data-like-bound])').forEach((card) => {
+      card.dataset.likeBound = 'true';
+      let lastTap = 0;
+      card.addEventListener('touchend', (event) => {
+        const now = Date.now();
+        if (now - lastTap < 320) {
+          const button = card.querySelector('[data-like-button]');
+          if (button && !button.dataset.liked) button.click();
+        }
+        lastTap = now;
+      });
+      card.addEventListener('dblclick', () => {
+        const button = card.querySelector('[data-like-button]');
+        if (button && !button.dataset.liked) button.click();
+      });
+    });
+    window.bindLikeCards();
+
+    (() => {
+      const showError = (element, text) => {
+        let error = element.querySelector('.ajax-error');
+        if (!error) {
+          error = document.createElement('p');
+          error.className = 'ajax-error';
+          error.setAttribute('role', 'status');
+          element.append(error);
+        }
+        error.textContent = text;
+      };
+      const clearError = (element) => {
+        const error = element.querySelector('.ajax-error');
+        if (error) error.remove();
+      };
+      const appendMessage = (container, message) => {
+        if (container.querySelector(`[data-message-id="${message.id}"]`)) return;
+        if (container.querySelector('.empty-state')) container.innerHTML = '';
+        if (message.html) {
+          container.insertAdjacentHTML('beforeend', message.html);
+          container.scrollTop = container.scrollHeight;
+          return;
+        }
+        const bubble = document.createElement('p');
+        bubble.className = `message-bubble${message.mine ? ' mine' : ''}`;
+        bubble.dataset.messageId = message.id;
+        bubble.append(document.createTextNode(message.body));
+        const time = document.createElement('small');
+        time.textContent = message.time;
+        bubble.append(time);
+        container.append(bubble);
+        container.scrollTop = container.scrollHeight;
+      };
+      document.querySelectorAll('[data-emoji]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const input = document.querySelector('.chat-compose [name="body"]');
+          const start = input.selectionStart ?? input.value.length;
+          const end = input.selectionEnd ?? start;
+          input.setRangeText(button.dataset.emoji, start, end, 'end');
+          input.focus();
+        });
+      });
+      document.querySelectorAll('[data-sticker-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const form = document.querySelector('.chat-compose');
+          const stickerField = form.querySelector('[name="sticker"]');
+          const bodyField = form.querySelector('[name="body"]');
+          stickerField.value = button.dataset.stickerId;
+          form.querySelectorAll('.sticker-option').forEach((option) => {
+            option.classList.toggle('selected', option === button);
+          });
+          bodyField.placeholder = 'Sticker selected — add a message or press Send';
+          bodyField.focus();
+        });
+      });
+      document.querySelectorAll('.chat-attach input[type="file"]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const label = input.closest('.chat-attach');
+          const name = input.files[0]?.name;
+          label.title = name ? `Attached: ${name}` : 'Attach a file';
+          label.classList.toggle('has-file', Boolean(name));
+          if (name) {
+            const sticker = document.querySelector('.chat-compose [name="sticker"]');
+            if (sticker) sticker.value = '';
+            document.querySelectorAll('.sticker-option').forEach((option) => {
+              option.classList.remove('selected');
+            });
+          }
+        });
+      });
+      document.querySelectorAll('[data-call-action]').forEach((button) => {
+        button.addEventListener('click', () => startCall(button.dataset.callAction));
+      });
+      const callOverlay = document.querySelector('[data-call-overlay]');
+      if (callOverlay) {
+        const callTitle = callOverlay.querySelector('[data-call-title]');
+        const callStatus = callOverlay.querySelector('[data-call-status]');
+        const answerButton = callOverlay.querySelector('[data-call-answer]');
+        const declineButton = callOverlay.querySelector('[data-call-decline]');
+        const hangupButton = callOverlay.querySelector('[data-call-hangup]');
+        const localVideo = callOverlay.querySelector('[data-call-local-video]');
+        const remoteVideo = callOverlay.querySelector('[data-call-remote-video]');
+        const remoteAudio = callOverlay.querySelector('[data-call-remote-audio]');
+        const incomingCallsUrl = '{% url "incoming_calls" %}';
+        const callUpdatesUrlTemplate = '{% url "call_updates" 0 %}';
+        const callActionUrlTemplate = '{% url "call_action" 0 %}';
+        const csrfToken = document.querySelector('[data-call-csrf] [name="csrfmiddlewaretoken"]').value;
+        const rtcConfiguration = {
+          iceServers: [
+            {urls: 'stun:stun.cloudflare.com:3478'},
+            {urls: 'stun:stun.l.google.com:19302'},
+          ],
+        };
+        let currentCall = null;
+        let peerConnection = null;
+        let localStream = null;
+        let remoteDescriptionReady = false;
+        let queuedCandidates = [];
+        let signalCursor = 0;
+        let callPollTimer = null;
+        let incomingPollTimer = null;
+        let callSocket = null;
+        let socketReconnectTimer = null;
+        let socketReconnectDelay = 1000;
+        let shuttingDown = false;
+        let ringtoneTimer = null;
+        let callTimeoutTimer = null;
+        let ringtoneContext = null;
+
+        const postCall = async (url, values) => {
+          const body = new FormData();
+          body.append('csrfmiddlewaretoken', csrfToken);
+          Object.entries(values).forEach(([key, value]) => {
+            body.append(key, typeof value === 'string' ? value : JSON.stringify(value));
+          });
+          const response = await fetch(url, {
+            method: 'POST',
+            body,
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'},
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'The call request failed.');
+          return data;
+        };
+        const callUpdatesUrl = (id) => callUpdatesUrlTemplate.replace('/0/', `/${id}/`);
+        const callActionUrl = (id) => callActionUrlTemplate.replace('/0/', `/${id}/`);
+        const showCall = (title, status) => {
+          callTitle.textContent = title;
+          callStatus.textContent = status;
+          callOverlay.hidden = false;
+        };
+        const stopRingtone = () => {
+          if (ringtoneTimer) window.clearInterval(ringtoneTimer);
+          ringtoneTimer = null;
+          if (callTimeoutTimer) window.clearTimeout(callTimeoutTimer);
+          callTimeoutTimer = null;
+          if (ringtoneContext) {
+            ringtoneContext.suspend();
+          }
+        };
+        const stopCallTimeout = () => {
+          if (callTimeoutTimer) window.clearTimeout(callTimeoutTimer);
+          callTimeoutTimer = null;
+        };
+        const startCallTimeout = () => {
+          stopCallTimeout();
+          callTimeoutTimer = window.setTimeout(async () => {
+            if (!currentCall) return;
+            const id = currentCall.id;
+            if (id) {
+              try {
+                await postCall(callActionUrl(id), {action: 'end'});
+              } catch (error) {
+                console.warn(error.message);
+              }
+            }
+            if (currentCall) finishCall('No answer. The call ended.');
+          }, 45000);
+        };
+        const unlockCallAudio = () => {
+          try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            ringtoneContext ||= new AudioContextClass();
+            if (ringtoneContext.state === 'suspended') {
+              ringtoneContext.resume().catch((error) => console.warn('Call audio is unavailable:', error.message));
+            }
+          } catch (error) {
+            console.warn('Call audio is unavailable:', error.message);
+          }
+        };
+        document.addEventListener('pointerdown', unlockCallAudio);
+        document.addEventListener('keydown', unlockCallAudio);
+        const ring = () => {
+          if (ringtoneTimer) return;
+          const playTone = () => {
+            try {
+              const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+              if (!AudioContextClass) return;
+              ringtoneContext ||= new AudioContextClass();
+              if (ringtoneContext.state === 'suspended') {
+                ringtoneContext.resume().catch((error) => console.warn('Call ringtone could not play:', error.message));
+              }
+              const oscillator = ringtoneContext.createOscillator();
+              const gain = ringtoneContext.createGain();
+              oscillator.frequency.value = 740;
+              gain.gain.setValueAtTime(0.0001, ringtoneContext.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.12, ringtoneContext.currentTime + 0.03);
+              gain.gain.exponentialRampToValueAtTime(0.0001, ringtoneContext.currentTime + 0.35);
+              oscillator.connect(gain);
+              gain.connect(ringtoneContext.destination);
+              oscillator.start();
+              oscillator.stop(ringtoneContext.currentTime + 0.36);
+            } catch (error) {
+              console.warn('Call ringtone could not play:', error.message);
+            }
+          };
+          playTone();
+          ringtoneTimer = window.setInterval(playTone, 1100);
+        };
+        const stopMedia = () => {
+          if (callPollTimer) window.clearInterval(callPollTimer);
+          callPollTimer = null;
+          if (peerConnection) peerConnection.close();
+          peerConnection = null;
+          if (localStream) localStream.getTracks().forEach((track) => track.stop());
+          localStream = null;
+          remoteVideo.srcObject = null;
+          remoteAudio.srcObject = null;
+          localVideo.srcObject = null;
+          remoteDescriptionReady = false;
+          queuedCandidates = [];
+          signalCursor = 0;
+        };
+        const finishCall = (message) => {
+          stopRingtone();
+          stopMedia();
+          currentCall = null;
+          answerButton.hidden = true;
+          declineButton.hidden = true;
+          hangupButton.hidden = true;
+          callStatus.textContent = message;
+          window.setTimeout(() => {
+            if (!currentCall) callOverlay.hidden = true;
+          }, 2400);
+        };
+        const setRemoteDescription = async (description) => {
+          await peerConnection.setRemoteDescription(description);
+          remoteDescriptionReady = true;
+          for (const candidate of queuedCandidates) {
+            await peerConnection.addIceCandidate(candidate);
+          }
+          queuedCandidates = [];
+        };
+        const addRemoteCandidate = async (candidate) => {
+          if (!peerConnection || !remoteDescriptionReady) {
+            queuedCandidates.push(candidate);
+            return;
+          }
+          await peerConnection.addIceCandidate(candidate);
+        };
+        const makePeerConnection = () => {
+          peerConnection = new RTCPeerConnection(rtcConfiguration);
+          localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate && currentCall) {
+              postCall(callActionUrl(currentCall.id), {
+                action: 'signal',
+                candidate: event.candidate.toJSON(),
+              }).catch((error) => console.warn(error.message));
+            }
+          };
+          peerConnection.ontrack = (event) => {
+            const stream = event.streams[0];
+            if (currentCall?.kind === 'video') {
+              remoteVideo.srcObject = stream;
+              remoteVideo.hidden = false;
+              remoteVideo.play().catch((error) => console.warn('Remote video could not autoplay:', error.message));
+            } else {
+              remoteAudio.srcObject = stream;
+              remoteAudio.play().catch((error) => console.warn('Remote audio could not autoplay:', error.message));
+            }
+          };
+          peerConnection.onconnectionstatechange = () => {
+            if (peerConnection?.connectionState === 'connected') {
+              stopRingtone();
+              callStatus.textContent = currentCall.kind === 'video' ? 'Video call connected' : 'Audio call connected';
+            } else if (peerConnection?.connectionState === 'failed') {
+              callStatus.textContent = 'Connection failed. Check your network and try again.';
+            }
+          };
+        };
+        const applyCallUpdate = async (data) => {
+          if (!currentCall || currentCall.id !== data.call.id) return;
+          if (['declined', 'missed', 'ended'].includes(data.call.status)) {
+            finishCall(
+              data.call.status === 'declined' ? 'The call was declined.'
+                : data.call.status === 'missed' ? 'No answer. The call ended.'
+                : 'The call has ended.',
+            );
+            return;
+          }
+          if (data.call.status === 'active') stopCallTimeout();
+          if (currentCall.role === 'caller' && data.answer && !remoteDescriptionReady) {
+            await setRemoteDescription(data.answer);
+            stopRingtone();
+            callStatus.textContent = 'Connecting…';
+          }
+        };
+        const syncCall = async (callId) => {
+          if (!currentCall || currentCall.id !== callId) return;
+          try {
+            const response = await fetch(
+              `${callUpdatesUrl(callId)}?after_id=${signalCursor}`,
+              {headers: {'Accept': 'application/json'}, cache: 'no-store'},
+            );
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Could not check the call.');
+            signalCursor = data.latest_signal_id;
+            await applyCallUpdate(data);
+            for (const signal of data.signals) {
+              await addRemoteCandidate(signal.candidate);
+            }
+          } catch (error) {
+            console.warn(error.message);
+          }
+        };
+        const startCallPolling = () => {
+          if (callPollTimer) window.clearInterval(callPollTimer);
+          const callId = currentCall.id;
+          if (callSocket?.readyState === WebSocket.OPEN) {
+            syncCall(callId);
+            return;
+          }
+          syncCall(callId);
+          callPollTimer = window.setInterval(() => syncCall(callId), 4000);
+        };
+        const getLocalMedia = async (kind) => {
+          if (!navigator.mediaDevices?.getUserMedia) {
+            throw new Error('Calls need a secure browser connection and microphone permission.');
+          }
+          return navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: kind === 'video',
+          });
+        };
+        const startCall = async (kind) => {
+          if (currentCall) return;
+          const header = document.querySelector('[data-call-start-url]');
+          if (!header) return;
+          currentCall = {kind, role: 'caller', id: null};
+          const attempt = currentCall;
+          showCall(
+            `${kind === 'video' ? 'Video' : 'Audio'} call with ${header.dataset.callContact}`,
+            'Getting your microphone ready…',
+          );
+          hangupButton.hidden = false;
+          try {
+            localStream = await getLocalMedia(kind);
+            if (currentCall !== attempt) {
+              localStream.getTracks().forEach((track) => track.stop());
+              localStream = null;
+              return;
+            }
+            localVideo.srcObject = localStream;
+            localVideo.hidden = kind !== 'video';
+            makePeerConnection();
+            const offer = await peerConnection.createOffer();
+            const call = await postCall(header.dataset.callStartUrl, {
+              kind,
+              offer: {type: offer.type, sdp: offer.sdp},
+            });
+            attempt.id = call.id;
+            if (currentCall !== attempt) {
+              postCall(callActionUrl(call.id), {action: 'end'}).catch((endError) => console.warn(endError.message));
+              stopMedia();
+              return;
+            }
+            await peerConnection.setLocalDescription(offer);
+            callStatus.textContent = `Ringing ${header.dataset.callContact}…`;
+            ring();
+            startCallTimeout();
+            startCallPolling();
+          } catch (error) {
+            if (attempt.id) {
+              postCall(callActionUrl(attempt.id), {action: 'end'}).catch((endError) => console.warn(endError.message));
+            }
+            if (currentCall === attempt) finishCall(error.message || 'Could not start the call.');
+          }
+        };
+        const answerCall = async () => {
+          if (!currentCall || currentCall.role !== 'recipient') return;
+          answerButton.disabled = true;
+          declineButton.disabled = true;
+          try {
+            localStream = await getLocalMedia(currentCall.kind);
+            localVideo.srcObject = localStream;
+            localVideo.hidden = currentCall.kind !== 'video';
+            makePeerConnection();
+            await setRemoteDescription(currentCall.offer);
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            await postCall(callActionUrl(currentCall.id), {
+              action: 'answer',
+              answer: {type: answer.type, sdp: answer.sdp},
+            });
+            stopRingtone();
+            answerButton.hidden = true;
+            declineButton.hidden = true;
+            hangupButton.hidden = false;
+            callStatus.textContent = 'Connecting…';
+            stopCallTimeout();
+            startCallPolling();
+          } catch (error) {
+            callStatus.textContent = error.message || 'Could not answer the call.';
+            if (currentCall) {
+              postCall(callActionUrl(currentCall.id), {action: 'end'}).catch(() => {});
+            }
+            finishCall(error.message || 'Could not answer the call.');
+          } finally {
+            answerButton.disabled = false;
+            declineButton.disabled = false;
+          }
+        };
+        const declineCall = async () => {
+          if (!currentCall) return;
+          try {
+            await postCall(callActionUrl(currentCall.id), {action: 'decline'});
+          } catch (error) {
+            console.warn(error.message);
+          }
+          finishCall('Call declined.');
+        };
+        const endCall = async () => {
+          if (!currentCall) return;
+          const id = currentCall.id;
+          try {
+            if (id) await postCall(callActionUrl(id), {action: 'end'});
+          } catch (error) {
+            console.warn(error.message);
+          }
+          finishCall('Call ended.');
+        };
+        answerButton.addEventListener('click', answerCall);
+        declineButton.addEventListener('click', declineCall);
+        hangupButton.addEventListener('click', endCall);
+
+        const showIncomingCall = (incoming) => {
+          if (currentCall) return;
+          currentCall = {
+            id: incoming.id,
+            kind: incoming.kind,
+            role: 'recipient',
+            caller: incoming.caller,
+            offer: incoming.offer,
+          };
+          showCall(
+            `Incoming ${incoming.kind} call`,
+            `${incoming.caller} is calling you`,
+          );
+          answerButton.hidden = false;
+          declineButton.hidden = false;
+          hangupButton.hidden = true;
+          ring();
+          startCallTimeout();
+          startCallPolling();
+        };
+        const syncIncomingCalls = async () => {
+          if (currentCall) return;
+          try {
+            const response = await fetch(incomingCallsUrl, {
+              headers: {'Accept': 'application/json'},
+              cache: 'no-store',
+            });
+            if (!response.ok) throw new Error('Could not check for incoming calls.');
+            const data = await response.json();
+            if (data.calls[0]) showIncomingCall(data.calls[0]);
+          } catch (error) {
+            console.warn(error.message);
+          }
+        };
+        const handleCallSocketMessage = async (event) => {
+          const message = JSON.parse(event.data);
+          if (message.event === 'call_offer') {
+            showIncomingCall({...message.call, offer: message.offer});
+          } else if (message.event === 'call_state') {
+            await applyCallUpdate(message);
+          } else if (
+            message.event === 'call_signal'
+            && currentCall?.id === message.call_id
+          ) {
+            signalCursor = Math.max(signalCursor, message.signal_id || 0);
+            await addRemoteCandidate(message.candidate);
+          }
+        };
+        const connectCallSocket = () => {
+          if (!('WebSocket' in window)) return;
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const socketUrl = '{{ CALLS_WEBSOCKET_URL|escapejs }}'
+            || `${protocol}//${window.location.host}/ws/calls/`;
+          callSocket = new WebSocket(socketUrl);
+          callSocket.addEventListener('open', () => {
+            socketReconnectDelay = 1000;
+            if (callPollTimer) window.clearInterval(callPollTimer);
+            callPollTimer = null;
+            if (incomingPollTimer) window.clearInterval(incomingPollTimer);
+            incomingPollTimer = null;
+            syncIncomingCalls();
+            if (currentCall) syncCall(currentCall.id);
+          });
+          callSocket.addEventListener('message', (event) => {
+            handleCallSocketMessage(event).catch((error) => console.warn(error.message));
+          });
+          callSocket.addEventListener('close', () => {
+            if (shuttingDown) return;
+            if (callPollTimer) window.clearInterval(callPollTimer);
+            if (incomingPollTimer) window.clearInterval(incomingPollTimer);
+            if (currentCall) startCallPolling();
+            syncIncomingCalls();
+            incomingPollTimer = window.setInterval(syncIncomingCalls, 4000);
+            if (socketReconnectTimer) window.clearTimeout(socketReconnectTimer);
+            socketReconnectTimer = window.setTimeout(connectCallSocket, socketReconnectDelay);
+            socketReconnectDelay = Math.min(socketReconnectDelay * 2, 15000);
+          });
+          callSocket.addEventListener('error', () => callSocket.close());
+        };
+        connectCallSocket();
+        incomingPollTimer = window.setInterval(() => {
+          if (callSocket?.readyState !== WebSocket.OPEN) syncIncomingCalls();
+        }, 4000);
+        window.addEventListener('pagehide', () => {
+          shuttingDown = true;
+          stopRingtone();
+          if (currentCall?.id && navigator.sendBeacon) {
+            const endRequest = new URLSearchParams({
+              csrfmiddlewaretoken: csrfToken,
+              action: 'end',
+            });
+            navigator.sendBeacon(callActionUrl(currentCall.id), endRequest);
+          }
+          if (incomingPollTimer) window.clearInterval(incomingPollTimer);
+          if (socketReconnectTimer) window.clearTimeout(socketReconnectTimer);
+          if (callSocket) callSocket.close();
+          stopMedia();
+          if (ringtoneContext) ringtoneContext.close();
+        }, {once: true});
+      }
+      document.addEventListener('submit', async (event) => {
+        const form = event.target.closest('form[data-ajax-action]');
+        if (!form || form.dataset.submitting === 'true') return;
+        event.preventDefault();
+        form.dataset.submitting = 'true';
+        clearError(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
+        try {
+          const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'},
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error((data.errors || [data.error || 'Please try again.'])[0]);
+          const action = form.dataset.ajaxAction;
+          if (action === 'like') {
+            const post = form.closest('.post-card');
+            const button = form.querySelector('[data-like-button]');
+            button.classList.toggle('liked', data.liked);
+            if (data.liked) button.dataset.liked = 'true';
+            else delete button.dataset.liked;
+            const count = post.querySelector('[data-post-like-count]');
+            count.textContent = `${data.like_count} ${data.like_count === 1 ? 'like' : 'likes'}`;
+          } else if (action === 'comment' || action === 'reply') {
+            if (action === 'reply') {
+              const parent = form.closest('.comment-line');
+              parent.querySelector('.comment-replies').insertAdjacentHTML('beforeend', data.html);
+            } else {
+              const post = form.closest('.post-card');
+              post.querySelector('.comments-list').insertAdjacentHTML('beforeend', data.html);
+              post.querySelector('[data-post-comment-count]').textContent = data.comment_count;
+            }
+            form.reset();
+          } else if (action === 'comment-like') {
+            const button = form.querySelector('[data-comment-like]');
+            button.querySelector('span').textContent = data.like_count;
+            if (data.liked) button.dataset.liked = 'true';
+            else delete button.dataset.liked;
+          } else if (action === 'follow') {
+            form.dataset.following = String(data.following);
+            submitButton.textContent = data.following ? 'Following' : 'Follow';
+            submitButton.classList.toggle('primary', !data.following);
+            submitButton.classList.toggle('secondary', data.following);
+            const count = document.querySelector('[data-follower-count]');
+            if (count) count.textContent = data.follower_count;
+          } else if (action === 'message') {
+            const container = document.querySelector('.chat-messages');
+            appendMessage(container, data);
+            container.dataset.lastMessageId = Math.max(
+              Number(container.dataset.lastMessageId || 0), data.id
+            );
+            form.reset();
+            form.querySelector('[name="body"]').placeholder = 'Write a message…';
+            document.querySelectorAll('.sticker-option').forEach((option) => {
+              option.classList.remove('selected');
+            });
+            const attach = form.querySelector('.chat-attach');
+            attach.classList.remove('has-file');
+            attach.title = 'Attach a file';
+          } else if (action === 'sticker-create') {
+            const options = document.querySelector('[data-sticker-options]');
+            const empty = options.querySelector('.sticker-empty');
+            if (empty) empty.remove();
+            options.insertAdjacentHTML('afterbegin', data.html);
+            const sticker = options.querySelector('.sticker-option');
+            sticker.addEventListener('click', () => {
+              const form = document.querySelector('.chat-compose');
+              form.querySelector('[name="sticker"]').value = sticker.dataset.stickerId;
+              form.querySelector('[name="body"]').placeholder = 'Sticker selected — add a message or press Send';
+              sticker.classList.add('selected');
+              form.querySelector('[name="body"]').focus();
+            });
+            form.reset();
+          } else if (action === 'create-post') {
+            const success = document.createElement('div');
+            success.className = 'empty-state create-success';
+            const heading = document.createElement('h2');
+            heading.textContent = data.message;
+            const link = document.createElement('a');
+            link.className = 'button primary';
+            link.href = data.url;
+            link.textContent = 'Go to your feed';
+            success.append(heading, link);
+            form.replaceWith(success);
+          } else if (action === 'create-story') {
+            const success = document.createElement('div');
+            success.className = 'empty-state create-success';
+            const heading = document.createElement('h2');
+            heading.textContent = data.message;
+            success.append(heading);
+            form.replaceWith(success);
+          }
+        } catch (error) {
+          showError(form, error.message || 'Update failed. Please try again.');
+        } finally {
+          form.dataset.submitting = 'false';
+          if (submitButton && submitButton.isConnected) submitButton.disabled = false;
+        }
+      });
+
+      const feed = document.querySelector('[data-feed-updates]');
+      if (feed) {
+        let cursor = Number(feed.dataset.lastPostId || 0);
+        const pollFeed = async () => {
+          if (document.hidden) return;
+          try {
+            const url = `${feed.getAttribute('data-feed-updates')}?after_id=${cursor}`;
+            const response = await fetch(url, {headers: {'Accept': 'application/json'}, cache: 'no-store'});
+            if (!response.ok) throw new Error('Could not check for new posts.');
+            const data = await response.json();
+            if (data.html.trim()) {
+              const empty = feed.querySelector('.empty-state');
+              if (empty) empty.remove();
+              feed.insertAdjacentHTML('afterbegin', data.html);
+              window.bindLikeCards(feed);
+              cursor = data.latest_id;
+            }
+          } catch (error) {
+            console.warn(error.message);
+          }
+        };
+        window.setInterval(pollFeed, 10000);
+      }
+
+      const chat = document.querySelector('[data-message-poll-url]');
+      if (chat) {
+        chat.scrollTop = chat.scrollHeight;
+        const pollMessages = async () => {
+          if (document.hidden) return;
+          try {
+            const response = await fetch(
+              `${chat.dataset.messagePollUrl}${chat.dataset.lastMessageId || 0}`,
+              {headers: {'Accept': 'application/json'}, cache: 'no-store'}
+            );
+            if (!response.ok) throw new Error('Could not check for new messages.');
+            const data = await response.json();
+            data.messages.forEach((message) => {
+              appendMessage(chat, message);
+              chat.dataset.lastMessageId = Math.max(
+                Number(chat.dataset.lastMessageId || 0), message.id
+              );
+            });
+          } catch (error) {
+            console.warn(error.message);
+          }
+        };
+        window.setInterval(pollMessages, 4000);
+      }
+
+      const notificationUrl = '{% url "activity_updates" %}';
+      const notificationBadges = document.querySelectorAll('[data-notification-badge]');
+      const notificationToasts = document.querySelector('[data-notification-toasts]');
+      if (notificationBadges.length && notificationToasts) {
+        let notificationCursor = null;
+        const updateNotificationBadges = (count) => {
+          notificationBadges.forEach((badge) => {
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.hidden = count < 1;
+            badge.setAttribute('aria-label', `${count} unread notifications`);
+          });
+        };
+        const showNotificationToast = (notification) => {
+          const toast = document.createElement('a');
+          toast.className = 'notification-toast';
+          toast.href = '{% url "activity" %}';
+          const icon = document.createElement('span');
+          icon.className = 'notification-toast-icon';
+          icon.textContent = notification.kind === 'follow' ? '＋'
+            : notification.kind === 'message' ? '↗'
+            : notification.kind === 'comment' ? '◯' : '♡';
+          const copy = document.createElement('span');
+          const actor = document.createElement('b');
+          actor.textContent = notification.actor;
+          copy.append(actor, document.createTextNode(` ${notification.message}`));
+          const dismiss = document.createElement('span');
+          dismiss.className = 'notification-toast-dismiss';
+          dismiss.setAttribute('aria-hidden', 'true');
+          dismiss.textContent = '×';
+          toast.append(icon, copy, dismiss);
+          notificationToasts.prepend(toast);
+          window.setTimeout(() => toast.remove(), 6500);
+        };
+        const pollNotifications = async () => {
+          if (document.hidden) return;
+          try {
+            const url = notificationCursor === null
+              ? notificationUrl
+              : `${notificationUrl}?after_id=${notificationCursor}`;
+            const response = await fetch(url, {
+              headers: {'Accept': 'application/json'},
+              cache: 'no-store',
+            });
+            if (!response.ok) throw new Error('Could not check for new activity.');
+            const data = await response.json();
+            notificationCursor = data.latest_id;
+            updateNotificationBadges(data.unread_count);
+            data.notifications.forEach(showNotificationToast);
+          } catch (error) {
+            console.warn(error.message);
+          }
+        };
+        pollNotifications();
+        window.setInterval(pollNotifications, 4000);
+      }
+    })();
+  </script>
+</body>
+</html>

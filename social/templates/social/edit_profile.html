@@ -1,0 +1,13 @@
+{% extends 'social/base.html' %}
+{% block title %}Edit profile · Dymee{% endblock %}
+{% block content %}
+<section class="form-page">
+  <a class="back-link" href="{% url 'profile' request.user.username %}">← Back to profile</a>
+  <p class="eyebrow">YOUR SPACE</p><h1>Edit profile</h1><p class="muted">A few words can say a lot.</p>
+  <form class="form-stack editor-form" method="post" enctype="multipart/form-data"{% if BLOB_UPLOAD_ENABLED %} data-blob-purpose="avatar" data-blob-token-url="{% url 'blob_upload_token' %}" data-blob-upload-url="/api/blob-upload"{% endif %}>
+    {% csrf_token %}{{ form.non_field_errors }}
+    {% for field in form %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<label>{{ field.label }}{{ field }}{{ field.help_text }}{{ field.errors }}</label>{% endif %}{% endfor %}
+    <button class="button primary wide" type="submit">Save changes</button>
+  </form>
+</section>
+{% endblock %}

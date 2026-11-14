@@ -1,0 +1,18 @@
+{% extends 'social/base.html' %}
+{% block title %}Blocked accounts · Dymee{% endblock %}
+{% block content %}
+<section class="narrow-page">
+  <a class="back-link" href="{% url 'profile' request.user.username %}">← Back to profile</a>
+  <p class="eyebrow">YOUR BOUNDARIES</p><h1>Blocked accounts</h1>
+  <p class="muted">People you block won't see or message you. You can unblock them here.</p>
+  <div class="activity-list">
+    {% for item in blocks %}
+      <div class="person-row">
+        <span class="avatar">{% if item.blocked.profile.avatar %}<img src="{{ item.blocked.profile.avatar.url }}" alt="">{% else %}{{ item.blocked.username|slice:":1"|upper }}{% endif %}</span>
+        <span><b>{{ item.blocked.username }}</b><small>Blocked {{ item.created_at|date:"M j, Y" }}</small></span>
+        <form method="post" action="{% url 'unblock_user' item.blocked.username %}">{% csrf_token %}<button class="button secondary" type="submit">Unblock</button></form>
+      </div>
+    {% empty %}<div class="empty-state"><span class="empty-icon">♡</span><h2>No blocked accounts</h2><p>Accounts you block will show up here.</p></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

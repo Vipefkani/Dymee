@@ -1,0 +1,56 @@
+{% extends 'social/base.html' %}
+{% block title %}Chat with {{ other.username }} · Dymee{% endblock %}
+{% block content %}
+<section class="chat-page">
+  <header class="chat-header" data-call-start-url="{% url 'start_call' other.username %}" data-call-contact="{{ other.username }}">
+    <a class="back-link" href="{% url 'inbox' %}" aria-label="Back to messages">←</a>
+    <span class="avatar">{% if other.profile.avatar %}<img src="{{ other.profile.avatar.url }}" alt="">{% else %}{{ other.username|slice:":1"|upper }}{% endif %}</span>
+    <div class="chat-contact"><a href="{% url 'profile' other.username %}"><b>{{ other.username }}</b></a><small>Conversation</small></div>
+    <div class="call-controls" aria-label="Call controls">
+      <button class="call-button" type="button" data-call-action="audio" aria-label="Start audio call" title="Start audio call"><span>☎</span><b>Audio</b></button>
+      <button class="call-button" type="button" data-call-action="video" aria-label="Start video call" title="Start video call"><span>▣</span><b>Video</b></button>
+    </div>
+  </header>
+  <div class="chat-messages" data-message-poll-url="{% url 'conversation' other.username %}?after_id=" data-last-message-id="{{ last_message_id }}">
+    {% for message in thread %}
+      {% include 'social/_message.html' with message=message %}
+    {% empty %}<div class="empty-state"><span class="empty-icon">✳</span><h2>Say hello</h2><p>This is the start of your conversation.</p></div>{% endfor %}
+  </div>
+  <details class="sticker-tray" data-sticker-tray>
+    <summary>My stickers <span>＋</span></summary>
+    <div class="sticker-tray-content">
+      <div class="sticker-options" data-sticker-options>
+        {% for sticker in stickers %}{% include 'social/_sticker_option.html' with sticker=sticker %}{% empty %}
+          <p class="sticker-empty">Upload your own expressive stickers to get started.</p>
+        {% endfor %}
+      </div>
+      <form class="sticker-upload" method="post" enctype="multipart/form-data" action="{% url 'create_sticker' other.username %}" data-ajax-action="sticker-create"{% if BLOB_UPLOAD_ENABLED %} data-blob-purpose="sticker" data-blob-token-url="{% url 'blob_upload_token' %}" data-blob-upload-url="/api/blob-upload"{% endif %}>
+        {% csrf_token %}
+        {{ sticker_form.blob_upload_token }}{{ sticker_form.blob_upload_path }}
+        <label class="sticker-file-input">{{ sticker_form.image }}<span>Choose sticker image</span></label>
+        <input type="text" name="label" maxlength="60" placeholder="Sticker name (optional)">
+        <button class="button secondary" type="submit">Add sticker</button>
+      </form>
+      <small>Private to your account · PNG, JPG, WebP or GIF · max 3 MB</small>
+    </div>
+  </details>
+  <form class="chat-compose" method="post" enctype="multipart/form-data" data-ajax-action="message"{% if BLOB_UPLOAD_ENABLED %} data-blob-purpose="chat" data-blob-token-url="{% url 'blob_upload_token' %}" data-blob-upload-url="/api/blob-upload"{% endif %}>
+    {% csrf_token %}
+    {{ form.blob_upload_token }}{{ form.blob_upload_path }}
+    {{ form.sticker }}
+    <details class="emoji-picker">
+      <summary aria-label="Choose emoji" title="Choose emoji">☺</summary>
+      <div class="emoji-options" role="group" aria-label="Emoji">
+        {% for emoji in emojis %}<button type="button" data-emoji="{{ emoji }}">{{ emoji }}</button>{% endfor %}
+      </div>
+    </details>
+    <label class="chat-attach" title="Attach a file" aria-label="Attach a file">
+      <span aria-hidden="true">＋</span>
+      {{ form.attachment }}
+    </label>
+    {{ form.body }}
+    {{ form.body.errors }}
+    <button class="button primary" type="submit">Send</button>
+  </form>
+</section>
+{% endblock %}

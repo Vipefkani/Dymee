@@ -1,0 +1,14 @@
+{% if comment.author_id not in hidden_ids %}
+<div class="comment-line">
+  <p><a href="{% url 'profile' comment.author.username %}"><b>{{ comment.author.username }}</b></a> {{ comment.body }}</p>
+  <div class="comment-tools">
+    <form method="post" action="{% url 'toggle_comment_like' comment.id %}" data-ajax-action="comment-like">{% csrf_token %}<button data-comment-like {% if comment.is_liked %}data-liked="true"{% endif %} type="submit">♡ <span>{{ comment.likes.count }}</span></button></form>
+    <details><summary>Reply</summary><form class="reply-form" method="post" action="{% url 'add_comment' comment.post_id %}" data-ajax-action="reply">
+      {% csrf_token %}<input type="hidden" name="parent_id" value="{{ comment.id }}"><input name="body" maxlength="1000" placeholder="Write a reply…" required><button type="submit">Send</button>
+    </form></details>
+  </div>
+  <div class="comment-replies">
+    {% for reply in comment.replies.all %}<div class="reply-line">{% include 'social/_comment.html' with comment=reply %}</div>{% endfor %}
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,20 @@
+<article class="message-bubble {% if message.sender_id == request.user.id %}mine{% endif %}" data-message-id="{{ message.id }}">
+  {% if message.body %}<p>{{ message.body|linebreaksbr }}</p>{% endif %}
+  {% if message.sticker %}
+    <img class="sent-sticker" src="{{ message.sticker.image.url }}" alt="{{ message.sticker.label|default:'Sticker' }}">
+  {% endif %}
+  {% if message.attachment %}
+    {% if message.attachment_is_image %}
+      <a class="message-attachment-image" href="{{ message.attachment.url }}" target="_blank" rel="noopener">
+        <img src="{{ message.attachment.url }}" alt="Image attachment: {{ message.attachment.name|cut:'chat/' }}">
+      </a>
+    {% elif message.attachment_is_video %}
+      <video class="message-attachment-video" src="{{ message.attachment.url }}" controls playsinline preload="metadata"></video>
+    {% else %}
+      <a class="message-file" href="{{ message.attachment.url }}" target="_blank" rel="noopener">
+        <span aria-hidden="true">▤</span>{{ message.attachment.name|cut:'chat/'|truncatechars:45 }}
+      </a>
+    {% endif %}
+  {% endif %}
+  <small>{{ message.created_at|date:"g:i A" }}</small>
+</article>

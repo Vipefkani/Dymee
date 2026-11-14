@@ -1,0 +1,95 @@
+{% extends 'social/base.html' %}
+{% load static %}
+{% block title %}Home · Dymee{% endblock %}
+{% block content %}
+<div class="content-grid">
+  <section class="feed-column">
+    <div class="stories-panel">
+      <div class="story-bubble">
+        <a href="{% url 'create_story' %}" class="story-ring own-story">
+          <span class="avatar">{% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}" alt="">
+          {% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</span><i>＋</i>
+        </a><span>Your story</span>
+      </div>
+      {% for story in stories %}
+        {% if story.author_id != request.user.id %}
+        <a class="story-bubble" href="{% url 'story_detail' story.id %}">
+          <span class="story-ring"><span class="avatar">{% if story.author.profile.avatar %}<img src="{{ story.author.profile.avatar.url }}" alt="">
+          {% else %}{{ story.author.username|slice:":1"|upper }}{% endif %}</span></span>
+          <span>@{{ story.author.username }}</span>
+        </a>
+        {% endif %}
+      {% endfor %}
+      <a class="story-add-link" href="{% url 'create_story' %}">Share a story <span>↗</span></a>
+    </div>
+    <div class="feed-heading"><div><p class="eyebrow">YOUR LITTLE CORNER</p><h1>For you</h1></div><a class="text-link" href="{% url 'reels' %}">Watch Reels <span>↗</span></a></div>
+    <div id="feed-cards" data-feed-updates="{% url 'feed_updates' %}" data-last-post-id="{{ latest_post_id }}">
+      {% for post in posts %}
+        {% include 'social/_post.html' with post=post %}
+      {% empty %}
+        <section class="empty-state"><span class="empty-icon">✳</span><h2>Your feed starts here</h2><p>Follow a few people or explore the community to find something that makes you smile.</p><a class="button primary" href="{% url 'explore' %}">Find your people</a></section>
+      {% endfor %}
+    </div>
+    {% if page_obj.has_next %}<a class="button secondary load-more" data-load-more href="?page={{ page_obj.next_page_number }}">Load more posts</a>{% endif %}
+  </section>
+  <aside class="right-rail">
+    <div class="rail-user">
+      <a class="avatar" href="{% url 'profile' request.user.username %}">{% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}" alt="">
+      {% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</a>
+      <div><a href="{% url 'profile' request.user.username %}"><strong>{{ request.user.username }}</strong></a><span>Your space, your pace</span></div>
+      <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="quiet-button" type="submit">Log out</button></form>
+    </div>
+    <div class="rail-card">
+      <div class="rail-title"><span>Quick links</span><span>✦</span></div>
+      <a class="rail-link" href="{% url 'inbox' %}"><span class="rail-icon">↗</span><span><b>Messages</b><small>Catch up with friends</small></span></a>
+      <a class="rail-link" href="{% url 'activity' %}"><span class="rail-icon">♡</span><span><b>Activity</b><small>See what's new</small></span></a>
+      <a class="rail-link" href="{% url 'create_story' %}"><span class="rail-icon">◌</span><span><b>Add to your story</b><small>A moment, just for today</small></span></a>
+      <a class="rail-link" href="{% url 'account_settings' %}"><span class="rail-icon">⚙</span><span><b>Settings</b><small>Manage your account</small></span></a>
+    </div>
+    <p class="rail-footnote">Make good things. Be good to each other.</p>
+  </aside>
+</div>
+<script>
+  (() => {
+    const button = document.querySelector('[data-load-more]');
+    const list = document.querySelector('#feed-cards');
+    if (!button || !list) return;
+    let loading = false;
+    const loadMore = async () => {
+      if (loading) return;
+      loading = true;
+      button.textContent = 'Loading…';
+      try {
+        const response = await fetch(button.href);
+        if (!response.ok) throw new Error('Unable to load more posts.');
+        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const nextCards = page.querySelector('#feed-cards');
+        if (!nextCards) throw new Error('The feed response was incomplete.');
+        nextCards.querySelectorAll('.post-card').forEach((post) => list.append(post));
+        window.bindLikeCards(list);
+        const nextButton = page.querySelector('[data-load-more]');
+        if (!nextButton) {
+          button.remove();
+          return;
+        }
+        button.href = nextButton.href;
+        button.textContent = 'Load more posts';
+      } catch (error) {
+        button.textContent = 'Could not load. Try again';
+      } finally {
+        loading = false;
+      }
+    };
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      loadMore();
+    });
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMore();
+      }, { rootMargin: '500px' });
+      observer.observe(button);
+    }
+  })();
+</script>
+{% endblock %}

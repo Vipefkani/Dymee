@@ -1,0 +1,4 @@
+<button class="sticker-option" type="button" data-sticker-id="{{ sticker.id }}" aria-label="Send sticker: {{ sticker.label|default:'Custom sticker' }}">
+  <img src="{{ sticker.image.url }}" alt="{{ sticker.label|default:'Custom sticker' }}">
+  {% if sticker.label %}<span>{{ sticker.label }}</span>{% endif %}
+</button>

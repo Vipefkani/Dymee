@@ -1,0 +1,11 @@
+{% extends 'social/base.html' %}
+{% block title %}Story by {{ story.author.username }} · Dymee{% endblock %}
+{% block content %}
+<section class="story-viewer">
+  <div class="story-viewer-head"><a class="back-link" href="{% url 'feed' %}">×</a><span class="avatar">{% if story.author.profile.avatar %}<img src="{{ story.author.profile.avatar.url }}" alt="">{% else %}{{ story.author.username|slice:":1"|upper }}{% endif %}</span><b>{{ story.author.username }}</b><small>{{ story.created_at|timesince }} ago</small></div>
+  <div class="story-viewer-media">
+    {% if story.media_type == 'video' %}<video src="{{ story.media.url }}" autoplay controls playsinline></video>{% else %}<img src="{{ story.media.url }}" alt="Story by {{ story.author.username }}">{% endif %}
+    {% if story.caption %}<p>{{ story.caption }}</p>{% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+<article class="post-card" data-like-card>
+  <header class="post-header">
+    <a class="avatar" href="{% url 'profile' post.author.username %}">
+      {% if post.author.profile.avatar %}<img src="{{ post.author.profile.avatar.url }}" alt="">
+      {% else %}{{ post.author.username|slice:":1"|upper }}{% endif %}
+    </a>
+    <div class="post-byline">
+      <a href="{% url 'profile' post.author.username %}"><strong>{{ post.author.username }}</strong></a>
+      {% if post.location %}<span>{{ post.location }}</span>{% else %}<span>{{ post.created_at|timesince }} ago</span>{% endif %}
+    </div>
+    <a class="more-link" href="{% url 'report' 'post' post.id %}" aria-label="Report post">···</a>
+  </header>
+  <div class="post-media">
+    {% if post.media_type == 'video' %}
+      <video class="filter-{{ post.media_filter }}" src="{{ post.media.url }}" controls playsinline preload="metadata"></video>
+    {% else %}
+      <img class="filter-{{ post.media_filter }}" src="{{ post.media.url }}" alt="Photo shared by {{ post.author.username }}" loading="lazy">
+    {% endif %}
+  </div>
+  <div class="post-actions">
+    <form method="post" action="{% url 'toggle_like' post.id %}" data-ajax-action="like">{% csrf_token %}
+      <button data-like-button {% if post.is_liked %}data-liked="true"{% endif %} class="icon-button like-button {% if post.is_liked %}liked{% endif %}" type="submit" aria-label="Like post">♡</button>
+    </form>
+    <a class="icon-button" href="#comments-{{ post.id }}" aria-label="Comments">◯ <span data-post-comment-count="{{ post.id }}">{{ post.comment_count }}</span></a>
+    {% if post.author_id != request.user.id %}<a class="icon-button share-link" href="{% url 'conversation' post.author.username %}" aria-label="Message author">↗</a>{% endif %}
+    <span class="post-time">{{ post.created_at|date:"M j" }}</span>
+  </div>
+  <div class="post-caption">
+    <strong data-post-like-count="{{ post.id }}">{{ post.like_count }} {{ post.like_count|pluralize:"like,likes" }}</strong>
+    {% if post.caption %}<p><a href="{% url 'profile' post.author.username %}"><b>{{ post.author.username }}</b></a> {{ post.caption|linebreaksbr }}</p>{% endif %}
+  </div>
+  <div class="post-comments" id="comments-{{ post.id }}">
+    <div class="comments-list">
+    {% for comment in post.top_level_comments %}
+      {% include 'social/_comment.html' with comment=comment %}
+    {% endfor %}
+    </div>
+    {% if post.comment_count > 3 %}<a class="muted small-link" href="#comments-{{ post.id }}">View all {{ post.comment_count }} comments</a>{% endif %}
+    <form class="comment-form" method="post" action="{% url 'add_comment' post.id %}" data-ajax-action="comment">
+      {% csrf_token %}<input aria-label="Add a comment" name="body" placeholder="Add a comment…" maxlength="1000" required>
+      <button type="submit">Post</button>
+    </form>
+  </div>
+</article>

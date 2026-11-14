@@ -1,0 +1,16 @@
+{% extends 'social/base.html' %}
+{% block title %}{{ title }} · Dymee{% endblock %}
+{% block content %}
+<section class="form-page">
+  <a class="back-link" href="{% url 'feed' %}">← Back to feed</a>
+  <p class="eyebrow">MAKE A MOMENT</p><h1>{{ title }}</h1>
+  <p class="muted">Share a photo or video. Stories disappear after 24 hours.</p>
+  <div class="create-switch"><a class="{% if title == 'Create post' %}selected{% endif %}" href="{% url 'create_post' %}">Post</a><a class="{% if title == 'Create story' %}selected{% endif %}" href="{% url 'create_story' %}">Story · 24h</a></div>
+  <form class="form-stack editor-form" method="post" enctype="multipart/form-data" data-ajax-action="{% if title == 'Create post' %}create-post{% else %}create-story{% endif %}"{% if BLOB_UPLOAD_ENABLED %} data-blob-purpose="{% if title == 'Create post' %}post{% else %}story{% endif %}" data-blob-token-url="{% url 'blob_upload_token' %}" data-blob-upload-url="/api/blob-upload"{% endif %}>
+    {% csrf_token %}{{ form.non_field_errors }}
+    {% for field in form %}{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}<label>{{ field.label }}{{ field }}{{ field.help_text }}{{ field.errors }}</label>{% endif %}{% endfor %}
+    <small>JPG, PNG, WebP, GIF, MP4 or WebM · max 50 MB</small>
+    <button class="button primary wide" type="submit">Share your moment</button>
+  </form>
+</section>
+{% endblock %}

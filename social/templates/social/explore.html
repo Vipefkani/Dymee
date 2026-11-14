@@ -1,0 +1,28 @@
+{% extends 'social/base.html' %}
+{% block title %}Explore · Dymee{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">A LITTLE INSPIRATION</p><h1>Explore</h1><p class="muted">Find people and moments worth following.</p></div></div>
+<form class="search-panel" method="get" action="{% url 'explore' %}">
+  <span>⌕</span><input type="search" name="q" value="{{ query }}" placeholder="Try a username, hashtag, or place"><button class="button primary" type="submit">Search</button>
+</form>
+{% if query %}
+<section class="people-results">
+  {% for person in users %}
+    <a class="person-row" href="{% url 'profile' person.username %}">
+      <span class="avatar">{% if person.profile.avatar %}<img src="{{ person.profile.avatar.url }}" alt="">{% else %}{{ person.username|slice:":1"|upper }}{% endif %}</span>
+      <span><b>{{ person.username }}</b><small>{{ person.profile.bio|default:"Finding their angle." }}</small></span><span class="row-arrow">↗</span>
+    </a>
+  {% empty %}<p class="muted">No matching people this time.</p>{% endfor %}
+</section>
+{% endif %}
+<div class="section-title"><h2>{% if query %}Posts you might like{% else %}Fresh from the community{% endif %}</h2><span>✦</span></div>
+<div class="explore-grid">
+  {% for post in posts %}
+    <a class="explore-tile" href="{% url 'profile' post.author.username %}" aria-label="Post by {{ post.author.username }}">
+      {% if post.media_type == 'video' %}<video class="filter-{{ post.media_filter }}" src="{{ post.media.url }}" muted playsinline preload="metadata"></video><span class="tile-play">▶</span>
+      {% else %}<img class="filter-{{ post.media_filter }}" src="{{ post.media.url }}" alt="Post by {{ post.author.username }}" loading="lazy">{% endif %}
+      <span class="tile-overlay"><b>@{{ post.author.username }}</b><span>♡ {{ post.like_count }}</span></span>
+    </a>
+  {% empty %}<div class="empty-state"><h2>Nothing here just yet</h2><p>Try another search, or be the first to share something.</p></div>{% endfor %}
+</div>
+{% endblock %}

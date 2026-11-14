@@ -1,0 +1,16 @@
+{% extends 'social/base.html' %}
+{% block title %}Reels · Dymee{% endblock %}
+{% block content %}
+<section class="reels-page">
+  <div class="page-heading"><div><p class="eyebrow">SHORT, SWEET, SCROLLABLE</p><h1>Reels</h1></div><a class="back-link" href="{% url 'feed' %}">← Home</a></div>
+  <div class="reel-feed">
+    {% for post in posts %}
+      <article class="reel-card">
+        <video src="{{ post.media.url }}" controls playsinline loop preload="metadata"></video>
+        <div class="reel-caption"><a href="{% url 'profile' post.author.username %}"><b>@{{ post.author.username }}</b></a><p>{{ post.caption }}</p></div>
+        <div class="reel-actions"><form method="post" action="{% url 'toggle_like' post.id %}">{% csrf_token %}<button class="icon-button" type="submit">♡ <small>{{ post.like_count }}</small></button></form><a class="icon-button" href="{% url 'profile' post.author.username %}">◯ <small>{{ post.comment_count }}</small></a></div>
+      </article>
+    {% empty %}<div class="empty-state"><span class="empty-icon">▷</span><h2>No reels to roll yet</h2><p>Short videos shared by the community will show up here.</p><a class="button primary" href="{% url 'create_post' %}">Share a video</a></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

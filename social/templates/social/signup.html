@@ -1,0 +1,18 @@
+{% extends 'social/base.html' %}
+{% block title %}Create account · Dymee{% endblock %}
+{% block content %}
+<section class="auth-card">
+  <a class="brand auth-brand" href="{% url 'signup' %}"><span class="brand-mark">◎</span> dymee</a>
+  <h1>Find your people.</h1>
+  <p class="muted">A little corner of the internet for what you love.</p>
+  <form method="post" class="form-stack">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>{{ field.label }} {{ field }}{% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}{{ field.errors }}</label>
+    {% endfor %}
+    <button class="button primary wide" type="submit">Create account</button>
+  </form>
+  <p class="auth-switch">Already part of the community? <a href="{% url 'login' %}">Sign in</a></p>
+</section>
+{% endblock %}

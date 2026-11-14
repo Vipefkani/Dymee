@@ -1,0 +1,18 @@
+{% extends 'social/base.html' %}
+{% block title %}Activity · Dymee{% endblock %}
+{% block content %}
+<section class="narrow-page">
+  <p class="eyebrow">THE GOOD STUFF</p><h1>Activity</h1><p class="muted">Little reminders that you're part of something.</p>
+  <div class="activity-list">
+    {% for item in notifications %}
+      <a class="activity-item" href="{% if item.kind == 'message' %}{% url 'conversation' item.actor.username %}{% else %}{% url 'profile' item.actor.username %}{% endif %}">
+        <span class="avatar">{% if item.actor.profile.avatar %}<img src="{{ item.actor.profile.avatar.url }}" alt="">{% else %}{{ item.actor.username|slice:":1"|upper }}{% endif %}</span>
+        <span><b>{{ item.actor.username }}</b>
+          {% if item.kind == 'like' %}liked your post{% elif item.kind == 'comment_like' %}liked a comment on your post{% elif item.kind == 'comment' %}commented on your post{% elif item.kind == 'message' %}sent you a message{% else %}started following you{% endif %}
+          <small>{{ item.created_at|timesince }} ago</small>
+        </span><span class="activity-symbol">{% if item.kind == 'like' %}♡{% elif item.kind == 'comment' %}◯{% else %}＋{% endif %}</span>
+      </a>
+    {% empty %}<div class="empty-state"><span class="empty-icon">♡</span><h2>All caught up</h2><p>When someone likes your post, leaves a note, or follows you, you’ll see it here.</p></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

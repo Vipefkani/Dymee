@@ -1,0 +1,14 @@
+{% extends 'social/base.html' %}
+{% block title %}Report content · Dymee{% endblock %}
+{% block content %}
+<section class="form-page">
+  <a class="back-link" href="{% url 'feed' %}">← Back</a>
+  <p class="eyebrow">LOOKING OUT FOR EACH OTHER</p><h1>Send a report</h1>
+  <p class="muted">Reports are private and reviewed by the moderation team.</p>
+  <form class="form-stack editor-form" method="post">
+    {% csrf_token %}{{ form.non_field_errors }}
+    {% for field in form %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}
+    <button class="button primary wide" type="submit">Submit report</button>
+  </form>
+</section>
+{% endblock %}

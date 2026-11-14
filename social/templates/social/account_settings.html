@@ -1,0 +1,34 @@
+{% extends 'social/base.html' %}
+{% block title %}Settings · Dymee{% endblock %}
+{% block content %}
+<section class="narrow-page settings-page">
+  <a class="back-link" href="{% url 'profile' request.user.username %}">← Back to profile</a>
+  <p class="eyebrow">YOUR ACCOUNT, YOUR CALL</p>
+  <h1>Settings</h1>
+  <p class="muted">Update your sign-in details, profile, and account preferences.</p>
+
+  <section class="settings-card">
+    <div><h2>Account details</h2><p class="muted">Change your username or email address.</p></div>
+    <form class="form-stack" method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <label>{{ field.label }}{{ field }}{{ field.errors }}</label>
+      {% endfor %}
+      <button class="button primary" type="submit">Save account details</button>
+    </form>
+  </section>
+
+  <section class="settings-card settings-links">
+    <div><h2>Profile and security</h2><p class="muted">Keep your public profile and sign-in safe.</p></div>
+    <a class="settings-link" href="{% url 'edit_profile' %}"><span><b>Edit profile</b><small>Photo, bio, and website</small></span><span>↗</span></a>
+    <a class="settings-link" href="{% url 'password_change' %}"><span><b>Change password</b><small>Confirm your current password to continue</small></span><span>↗</span></a>
+    <a class="settings-link" href="{% url 'blocked_accounts' %}"><span><b>Blocked accounts</b><small>Review or unblock people</small></span><span>↗</span></a>
+  </section>
+
+  <section class="settings-card signout-card">
+    <div><h2>Sign out</h2><p class="muted">Finished for now? Your account will be here when you return.</p></div>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="button secondary" type="submit">Log out</button></form>
+  </section>
+</section>
+{% endblock %}

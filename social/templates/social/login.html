@@ -1,0 +1,18 @@
+{% extends 'social/base.html' %}
+{% block title %}Sign in · Dymee{% endblock %}
+{% block content %}
+<section class="auth-card">
+  <a class="brand auth-brand" href="{% url 'login' %}"><span class="brand-mark">◎</span> dymee</a>
+  <h1>Welcome back</h1>
+  <p class="muted">Sign in to see what your people are sharing.</p>
+  <form method="post" class="form-stack">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label>Email or username <input type="text" name="username" autocomplete="username" required autofocus></label>
+    <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <button class="button primary wide" type="submit">Sign in</button>
+  </form>
+  <p class="auth-switch">New around here? <a href="{% url 'signup' %}">Create an account</a></p>
+</section>
+{% endblock %}
